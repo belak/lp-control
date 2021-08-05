@@ -1,0 +1,12 @@
+[package]
+name = "lp-control"
+version = "0.1.0"
+authors = ["Kaleb Elwert <kaleb.elwert@datadoghq.com>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+launchy = { git = "https://github.com/kangalioo/launchy" }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+coreaudio-sys = "0.2.8"
