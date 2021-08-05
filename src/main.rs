@@ -26,7 +26,7 @@ fn main() -> anyhow::Result<()> {
             for y in 0..8 {
                 let idx = (y * 8 + x) as f32;
 
-                let color = if idx / 64.0 <= volume || idx / 64.0 - volume < 0.01 {
+                let color = if idx / 63.0 <= volume || idx / 63.0 - volume < 0.01 {
                     Color::RED
                 } else {
                     Color::BLACK
@@ -48,7 +48,8 @@ fn main() -> anyhow::Result<()> {
                     Button::GridButton { x, y } if x <= 7 && y <= 7 => {
                         let idx = (y * 8 + x) as f32;
                         println!("Grid button: {}, {} ({})", x, y, idx);
-                        platform::set_system_volume(idx / 64.0)?;
+
+                        platform::set_system_volume(idx / 63.0)?;
                     }
                     _ => {}
                 }

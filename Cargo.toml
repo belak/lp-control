@@ -10,3 +10,6 @@ launchy = { git = "https://github.com/kangalioo/launchy" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 coreaudio-sys = "0.2.8"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+alsa = "0.4.3"
