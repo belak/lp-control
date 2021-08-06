@@ -24,7 +24,6 @@ pub(crate) fn set_system_volume(volume: f32) -> anyhow::Result<()> {
     let (minv, maxv) = selem.get_playback_volume_range();
 
     let final_volume = (volume * (maxv - minv) as f32 + minv as f32) as i64;
-
     selem.set_playback_volume_all(final_volume)?;
 
     Ok(())
