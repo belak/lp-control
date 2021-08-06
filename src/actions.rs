@@ -1,3 +1,3 @@
-trait Action {
+pub trait Action {
 
 }

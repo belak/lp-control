@@ -1,19 +1,25 @@
-mod actions;
-mod layouts;
-mod platform;
+use std::collections::BTreeSet;
 
 use launchy::mini::{self, Button as LButton, Input, Message as LMessage};
 use launchy::prelude::*;
 use launchy::DeviceCanvas;
 
+mod actions;
+mod layouts;
+mod platform;
+
+use actions::Action;
+
 #[derive(Debug)]
 pub enum Color {
     Off,
+    DimRed,
     Red,
     Orange,
     Amber,
     Yellow,
     Green,
+    DimGreen,
 }
 
 impl Into<launchy::Color> for Color {
@@ -22,26 +28,30 @@ impl Into<launchy::Color> for Color {
 
         match self {
             Color::Off => LColor::BLACK,
+            Color::DimRed => LColor::new(0.3, 0.0, 0.0),
             Color::Red => LColor::RED,
+            // Orange on the LP Mini doesn't line up with the LP S docs, so we define our own.
             Color::Orange => LColor::new(1.0, 0.3, 0.0),
             Color::Amber => LColor::YELLOW,
+            // Yellow on the LP Mini doesn't line up with the LP S docs, so we define our own.
             Color::Yellow => LColor::new(0.3, 1.0, 0.0),
             Color::Green => LColor::GREEN,
+            Color::DimGreen => LColor::new(0.0, 0.3, 0.0),
         }
     }
 }
 
-#[derive(Debug)]
-pub enum Button {
-    TopButton { index: u8 },
-    SideButton { index: u8 },
-    GridButton { x: u8, y: u8 },
+#[derive(Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+pub enum Pad {
+    Top { index: u8 },
+    Side { index: u8 },
+    Grid { x: u8, y: u8 },
 }
 
 #[derive(Debug)]
 pub enum Message {
-    Press { button: Button },
-    Release { button: Button },
+    Press { pad: Pad },
+    Release { pad: Pad },
 }
 
 impl From<launchy::CanvasMessage> for Message {
@@ -49,13 +59,13 @@ impl From<launchy::CanvasMessage> for Message {
         match msg {
             // Press events
             launchy::CanvasMessage::Press { x, y: 0 } => Message::Press {
-                button: Button::TopButton { index: x as u8 },
+                pad: Pad::Top { index: x as u8 },
             },
             launchy::CanvasMessage::Press { x: 8, y } => Message::Press {
-                button: Button::SideButton { index: y as u8 - 1 },
+                pad: Pad::Side { index: y as u8 - 1 },
             },
             launchy::CanvasMessage::Press { x, y } => Message::Press {
-                button: Button::GridButton {
+                pad: Pad::Grid {
                     x: x as u8,
                     y: y as u8 - 1,
                 },
@@ -63,13 +73,13 @@ impl From<launchy::CanvasMessage> for Message {
 
             // Release events
             launchy::CanvasMessage::Release { x, y: 0 } => Message::Release {
-                button: Button::TopButton { index: x as u8 },
+                pad: Pad::Top { index: x as u8 },
             },
             launchy::CanvasMessage::Release { x: 8, y } => Message::Release {
-                button: Button::SideButton { index: y as u8 - 1 },
+                pad: Pad::Side { index: y as u8 - 1 },
             },
             launchy::CanvasMessage::Release { x, y } => Message::Release {
-                button: Button::GridButton {
+                pad: Pad::Grid {
                     x: x as u8,
                     y: y as u8 - 1,
                 },
@@ -83,7 +93,7 @@ fn main() -> anyhow::Result<()> {
         let msg: Message = msg.into();
         println!("Msg: {:?}", msg);
     })?;
-    canvas.clear();
+    canvas.clear(); // TODO: this doesn't actually clear the board properly
     canvas.flush()?;
 
     let input = Input::guess_polling()?;
@@ -91,6 +101,8 @@ fn main() -> anyhow::Result<()> {
 
     //let mut output = Output::guess()?;
     //output.reset()?;
+
+    let pressed: BTreeSet<Pad> = BTreeSet::new();
 
     for item in input.iter() {
         let volume = platform::get_system_volume()
@@ -103,18 +115,25 @@ fn main() -> anyhow::Result<()> {
             for y in 0..8 {
                 let idx = (y * 8 + x) as f32;
 
+                // The currently selected pad should be within 0.01 of the
+                // actual value. We can't use == because floats are a tiny bit
+                // imprecise.
                 let color = if (idx / 63.0 - volume).abs() < 0.01 {
                     Color::Yellow
                 } else if idx / 63.0 <= volume {
-                    Color::Green
+                    Color::DimGreen
                 } else {
                     Color::Off
                 };
 
                 canvas
-                    .set(Pad { x, y: y + 1 }, color.into())
+                    .set(launchy::Pad { x, y: y + 1 }, color.into())
                     .ok_or_else(|| anyhow::anyhow!("Failed to set color"))?;
             }
+
+            canvas
+                .set(launchy::Pad { x: 8, y: 8 }, Color::Red.into())
+                .ok_or_else(|| anyhow::anyhow!("Failed to set color"))?;
         }
 
         match item {
