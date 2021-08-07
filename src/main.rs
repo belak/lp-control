@@ -1,14 +1,16 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, LinkedList};
 
 use launchy::mini::{self, Button as LButton, Input, Message as LMessage};
 use launchy::prelude::*;
 use launchy::DeviceCanvas;
 
 mod actions;
+mod canvas;
 mod layouts;
 mod platform;
 
 use actions::Action;
+use layouts::Layout;
 
 #[derive(Debug)]
 pub enum Color {
@@ -46,6 +48,27 @@ pub enum Pad {
     Top { index: u8 },
     Side { index: u8 },
     Grid { x: u8, y: u8 },
+}
+
+impl Into<launchy::Pad> for Pad {
+    fn into(self) -> launchy::Pad {
+        use launchy::Pad as LPad;
+
+        match self {
+            Pad::Top { index } => LPad {
+                x: index.into(),
+                y: 0,
+            },
+            Pad::Side { index } => LPad {
+                x: 8,
+                y: index.into(),
+            },
+            Pad::Grid { x, y } => LPad {
+                x: x.into(),
+                y: (y + 1).into(),
+            },
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -88,7 +111,18 @@ impl From<launchy::CanvasMessage> for Message {
     }
 }
 
+fn setup_layouts<T>() -> Box<dyn Layout<T>>
+where
+    T: launchy::DeviceSpec,
+{
+    todo!()
+}
+
 fn main() -> anyhow::Result<()> {
+    // Create a layout stack and push the root layout onto it.
+    //let layout_stack: LinkedList<Box<dyn Layout<mini::Spec>>> = LinkedList::new();
+    //layout_stack.push_back(setup_layouts::<mini::Spec>());
+
     let mut canvas: DeviceCanvas<mini::Spec> = DeviceCanvas::guess(|msg| {
         let msg: Message = msg.into();
         println!("Msg: {:?}", msg);
@@ -133,6 +167,33 @@ fn main() -> anyhow::Result<()> {
 
             canvas
                 .set(launchy::Pad { x: 8, y: 8 }, Color::Red.into())
+                .ok_or_else(|| anyhow::anyhow!("Failed to set color"))?;
+
+            canvas
+                .set(launchy::Pad { x: 8, y: 7 }, Color::Green.into())
+                .ok_or_else(|| anyhow::anyhow!("Failed to set color"))?;
+
+            // Demo colors
+            canvas
+                .set(launchy::Pad { x: 1, y: 0 }, Color::DimGreen.into())
+                .ok_or_else(|| anyhow::anyhow!("Failed to set color"))?;
+            canvas
+                .set(launchy::Pad { x: 2, y: 0 }, Color::Green.into())
+                .ok_or_else(|| anyhow::anyhow!("Failed to set color"))?;
+            canvas
+                .set(launchy::Pad { x: 3, y: 0 }, Color::Yellow.into())
+                .ok_or_else(|| anyhow::anyhow!("Failed to set color"))?;
+            canvas
+                .set(launchy::Pad { x: 4, y: 0 }, Color::Amber.into())
+                .ok_or_else(|| anyhow::anyhow!("Failed to set color"))?;
+            canvas
+                .set(launchy::Pad { x: 5, y: 0 }, Color::Orange.into())
+                .ok_or_else(|| anyhow::anyhow!("Failed to set color"))?;
+            canvas
+                .set(launchy::Pad { x: 6, y: 0 }, Color::Red.into())
+                .ok_or_else(|| anyhow::anyhow!("Failed to set color"))?;
+            canvas
+                .set(launchy::Pad { x: 7, y: 0 }, Color::DimRed.into())
                 .ok_or_else(|| anyhow::anyhow!("Failed to set color"))?;
         }
 
